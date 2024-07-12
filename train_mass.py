@@ -22,7 +22,7 @@ from timm.utils import NativeScaler, get_state_dict, ModelEma
 
 import models
 from utils.datasets import build_dataset
-from engine.mass_engine import train_one_epoch, evaluate, get_basic_stats, final_eval_one_epoch # TODO: get_basic_stats?
+from engine.mass_engine import train_one_epoch, evaluate, get_basic_stats, final_eval_one_epoch
 import utils.misc as utils
 from parser import get_args_parser
 
@@ -151,8 +151,7 @@ def main(args):
     model.to(device)
 
     model_ema = None
-    if args.model_ema:  #TODO remove it?
-        # Important to create EMA model after cuda(), DP wrapper, and AMP but before SyncBN and DDP wrapper
+    if args.model_ema: 
         model_ema = ModelEma(
             model,
             decay=args.model_ema_decay,
@@ -181,50 +180,14 @@ def main(args):
     lr_scheduler, _ = create_scheduler(args, optimizer)
     lr_scheduler_dis, _ = create_scheduler(args, optimizer_dis)
 
-    criterion = {} # TODO: remove the if-else if only release our method
+    criterion = {}
     for attr in args.eval_attributes:
         criterion[attr] = 'eval'
-    if args.baseline == 'mass':
-        for attr in args.loss_m.keys():
-            criterion[attr] = 'sup'
-        for attr in args.loss_n.keys():
-            criterion[attr] = 'pre'
-        criterion['infonce'] = 'infonce'
-    elif args.baseline == 'alr':
-        args.loss_lambda_u_2 = 0.0
-        args.loss_lambda_s_2 = 0.0
-        for attr in args.loss_m.keys():
-            criterion[attr] = 'sup'
-            # overwrite 
-            args.loss_m[attr] = 0.0
-        for attr in args.loss_n.keys():
-            criterion[attr] = 'pre' #
-            args.loss_n[attr] = 99999.0
-        criterion['infonce'] = 'eval' # NO
-    elif args.baseline == 'gap':
-        for attr in args.loss_m.keys():
-            criterion[attr] = 'sup'
-        for attr in args.loss_n.keys():
-            criterion[attr] = 'pre'
-        criterion['infonce'] = 'mse'
-    elif args.baseline == 'msda':
-        for attr in args.loss_m.keys():
-            criterion[attr] = 'sup'
-        for attr in args.loss_n.keys():
-            criterion[attr] = 'pre'
-        criterion['infonce'] = 'mse'
-    elif args.baseline == 'bdq':
-        for attr in args.loss_m.keys():
-            criterion[attr] = 'sup'
-        for attr in args.loss_n.keys():
-            criterion[attr] = 'pre'
-        criterion['infonce'] = 'infonce'
-    elif args.baseline == 'ppdar':
-        for attr in args.loss_m.keys():
-            criterion[attr] = 'sup'
-        for attr in args.loss_n.keys():
-            criterion[attr] = 'pre'
-        criterion['infonce'] = 'infonce'
+    for attr in args.loss_m.keys():
+        criterion[attr] = 'sup'
+    for attr in args.loss_n.keys():
+        criterion[attr] = 'pre'
+    criterion['infonce'] = 'infonce'
 
     output_dir = Path(args.output_dir)
 
@@ -328,7 +291,7 @@ def main(args):
     for attr in args.eval_attributes:
         criterion[attr] = 'eval'
     test_stats = final_eval(model, attributes, criterion, in_channels, device, output_dir, dataset_train,
-               data_loader_train, data_loader_val, args) # TODO: attributes for utilities... u and f?
+               data_loader_train, data_loader_val, args)
     
     for attr in attributes:
         for k, v in test_stats.items():

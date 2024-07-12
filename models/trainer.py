@@ -1,4 +1,7 @@
-from typing import Optional
+# SPDX-License-Identifier: Apache-2.0
+# Copyright : JP Morgan Chase & Co
+ 
+ from typing import Optional
 
 import torch
 import torch.nn as nn

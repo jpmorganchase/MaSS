@@ -1,4 +1,7 @@
-import argparse
+# SPDX-License-Identifier: Apache-2.0
+# Copyright : JP Morgan Chase & Co
+ 
+ import argparse
 import utils.misc as utils
 
 def get_args_parser():
@@ -173,8 +176,6 @@ def get_args_parser():
                         help='lambda discriminator in the loss function')
     parser.add_argument('--loss-lambda-infonce', type=float, default=1, metavar='M',
                         help='lambda infonce in the loss function')
-    parser.add_argument('--baseline', type=str, default='mass',
-                        help='run with different baselines: mass, msda, gap, alr, bdq and ppdar')
     parser.add_argument('--deterministic', action='store_true', default=False,
                         help='Enable determinstic for cudnn and disable fp16')
 

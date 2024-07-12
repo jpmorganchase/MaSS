@@ -22,7 +22,7 @@ url={https://openreview.net/forum?id=61RlaY9EIn}
 ```bash
 conda create -y -n mass python=3.6
 conda activate mass
-pip install -r mass_req.txt #TODO: change to requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Data Preprocess
@@ -73,9 +73,9 @@ The same structure can be found for `motionsense`. We provided the setting for T
 
 ### m, n setting
 As described in the paper, the users can control the mutual information over sensitive and utility via `loss-m` and `loss-n` setting, if your setting violate the constraints, 
-MaSS will stop the program and provide a message to tell you that what is the value range you should use based on your dataset.
+MaSS will stop the program if the settings violate the constraints.
 
 
 ### Reading results
-For the accuracy of each attribute classifier, you can the performance at the end of `log.txt` generated during each training; while for MaSS, the performance of sensitive attribute(s) and preversed attribute(s) are displayed in the console and `mass_log.txt` in the output folder. 
+For the accuracy of each attribute classifier, you can the performance at the end of `log.txt` generated during each training; while for MaSS, the performance of sensitive attribute(s) and preserved attribute(s) are displayed in the console and `mass_log.txt` in the output folder. We use the top-1 accuracy.
 

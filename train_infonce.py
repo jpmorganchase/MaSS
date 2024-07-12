@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright : JP Morgan Chase & Co
+ 
 import os
 import sys
 import argparse
@@ -19,7 +22,7 @@ from utils.misc import MetricLogger, SmoothedValue
 import models
 
 
-def parse_option(): # TODO: cleanup options
+def parse_option():
     parser = argparse.ArgumentParser('argument for training')
 
     parser.add_argument('--print_freq', type=int, default=10,
@@ -36,10 +39,6 @@ def parse_option(): # TODO: cleanup options
     # optimization
     parser.add_argument('--learning_rate', type=float, default=0.001,
                         help='learning rate')
-    parser.add_argument('--lr_decay_epochs', type=str, default='700,800,900',
-                        help='where to decay lr, can be a list')
-    parser.add_argument('--lr_decay_rate', type=float, default=0.1,
-                        help='decay rate for learning rate')
     parser.add_argument('--weight_decay', type=float, default=1e-4,
                         help='weight decay')
     parser.add_argument('--momentum', type=float, default=0.9,
@@ -58,10 +57,6 @@ def parse_option(): # TODO: cleanup options
     parser.add_argument('--temp', type=float, default=0.07,
                         help='temperature for loss function')
     # other setting
-    parser.add_argument('--syncBN', action='store_true',
-                        help='using synchronized batch normalization')
-    parser.add_argument('--warm', action='store_true',
-                        help='warm-up for large batch training')
     parser.add_argument('--trial', type=str, default='0',
                         help='id for recording multiple runs')
     parser.add_argument('--output_dir', type=str, default='./',
@@ -83,31 +78,13 @@ def parse_option(): # TODO: cleanup options
     # set the path according to the environment
     if opt.data_dir is None:
         opt.data_dir = './datasets/'
-    # opt.model_path = './save/SupCon/{}_models'.format(opt.dataset)
     
-    iterations = opt.lr_decay_epochs.split(',')
-    opt.lr_decay_epochs = list([])
-    for it in iterations:
-        opt.lr_decay_epochs.append(int(it))
-
     opt.model_name = 'InfoNCE_{}_{}_lr_{}_decay_{}_bsz_{}_temp_{}_trial_{}'.\
         format(opt.dataset, opt.model, opt.learning_rate,
                opt.weight_decay, opt.batch_size, opt.temp, opt.trial)
 
     opt.model_name = '{}_cosine'.format(opt.model_name)
 
-    # warm-up for large-batch training,
-    # if opt.batch_size > 256:
-    #     opt.warm = True
-    # if opt.warm:
-    #     opt.model_name = '{}_warm'.format(opt.model_name)
-    #     opt.warmup_from = 0.01
-    #     opt.warm_epochs = 10
-    #     eta_min = opt.learning_rate * (opt.lr_decay_rate ** 3)
-    #     opt.warmup_to = eta_min + (opt.learning_rate - eta_min) * (
-    #         1 + math.cos(math.pi * opt.warm_epochs / opt.epochs)) / 2
-    
-    # opt.save_folder = os.path.join(opt.output_dir, opt.model_name)
     opt.save_folder = opt.output_dir
     if not os.path.isdir(opt.save_folder):
         os.makedirs(opt.save_folder)
@@ -131,10 +108,7 @@ def set_loader(args):
 
 def set_model(args):
 
-    if args.dataset == 'adience': # TODO: maybe integrate here?
-        in_channels = 3
-        num_classes = 1111 # TODO
-    elif args.dataset == 'audiomnist':
+    if args.dataset == 'audiomnist':
         in_channels = 768
         num_classes = 128
     elif args.dataset == 'motionsense':
@@ -148,9 +122,7 @@ def set_model(args):
         in_chans=in_channels
     )
     criterion = InfoNCELoss(temperature=args.temp)
-    # if opt.syncBN:
-    #     model = apex.parallel.convert_syncbn_model(model)
-
+    
     if torch.cuda.is_available():
         if torch.cuda.device_count() > 1:
             model = torch.nn.DataParallel(model)
@@ -165,7 +137,7 @@ def set_model(args):
 
 def adjust_learning_rate(args, optimizer, epoch):
     lr = args.learning_rate
-    eta_min = lr * (args.lr_decay_rate ** 3)
+    eta_min = lr * (0.1 ** 3)
     lr = eta_min + (lr - eta_min) * (
             1 + math.cos(math.pi * epoch / args.epochs)) / 2
     
@@ -175,25 +147,11 @@ def adjust_learning_rate(args, optimizer, epoch):
     return lr
 
 
-# def warmup_learning_rate(args, epoch, batch_id, total_batches, optimizer):
-#     if args.warm and epoch <= args.warm_epochs:
-#         p = (batch_id + (epoch - 1) * total_batches) / \
-#             (args.warm_epochs * total_batches)
-#         lr = args.warmup_from + p * (args.warmup_to - args.warmup_from)
-
-#         for param_group in optimizer.param_groups:
-#             param_group['lr'] = lr
-#         return lr
-#     else:
-#         return None
-
 def train(train_loader, model, criterion, optimizer, epoch, lr, opt):
     """one epoch training"""
     model.train()
 
     metric_logger = MetricLogger(delimiter="  ")
-    # metric_logger.add_meter('Batch time', SmoothedValue(window_size=1, fmt='{value:.4f}'))
-    # metric_logger.add_meter('Loss', SmoothedValue(window_size=1, fmt='{value:.4f}'))
     end = time.time()
 
     idx = 0
@@ -202,10 +160,6 @@ def train(train_loader, model, criterion, optimizer, epoch, lr, opt):
         if torch.cuda.is_available():
             images = images.cuda(non_blocking=True)
         bsz = images.shape[0]  # // 2
-        
-        # warm_lr = warmup_learning_rate(
-        #     opt, epoch, idx, len(train_loader), optimizer)
-        # lr = warm_lr if warm_lr is not None else lr
 
         # compute loss
         features = model(images)

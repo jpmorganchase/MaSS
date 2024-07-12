@@ -1,8 +1,6 @@
-# Copyright (c) 2015-present, Facebook, Inc.
-# All rights reserved.
-"""
-Train and eval functions used in gan training
-"""
+# SPDX-License-Identifier: Apache-2.0
+# Copyright : JP Morgan Chase & Co
+ 
 import math
 import sys
 from typing import Iterable, Optional
@@ -14,8 +12,8 @@ from torch.distributions import Categorical
 from timm.data import Mixup
 from timm.utils import accuracy, ModelEma
 from timm.loss import LabelSmoothingCrossEntropy
-from utils.losses import InfoNCELoss
 
+from utils.losses import InfoNCELoss
 import utils.misc as utils
 
 
@@ -185,17 +183,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: nn.ModuleDict,
                     features = torch.cat(
                         [f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
                     losses[attr] = args.loss_lambda_infonce * nce_loss(features)
-                # elif criter == 'msda_unannoated': # MSDA baseline
-                #     mse = nn.MSELoss()(anonymized_x, samples)
-                #     losses[attr] = args.loss_lambda_infonce * mse
-                # elif criter == 'gap_unannoated': # GAP baseline
-                #     mse = nn.MSELoss()(anonymized_x, samples)
-                #     # for normalized x and x', the mse take value from [0,4]
-                #     # and mse < 0.4 translate to angle < 36.7
-                #     violation = max(mse - args.baseline_hyper,
-                #                     torch.tensor(0, device=device))
-                #     losses[attr] = args.loss_lambda_infonce * \
-                #         torch.abs(violation)
                 # -------- Suppressed attributes, S --------
                 elif criter == 'sup': # this is the one used
                     kld = nn.CrossEntropyLoss(reduction="mean")(input=outsp[attr], target=targets[attr])
@@ -205,21 +192,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: nn.ModuleDict,
                     losses[attr] = args.loss_lambda_s_2 * \
                         torch.square(violation) + \
                         args.loss_lambda_s_1 * torch.abs(violation)
-                # elif criter == 'msda_s': # for MSDA baseline
-                #     epsilon = 1e-4
-                #     pred = F.softmax(outsp[attr], dim=-1)
-                #     kld = nn.NLLLoss(reduction="mean")(
-                #         input=torch.log(1-pred+epsilon), target=targets[attr])
-                #     kld2 = torch.mean(-torch.log(1 - torch.max(pred, dim=1)[0]+epsilon))
-                #     losses[attr] = args.loss_lambda_s_1 * (kld + kld2)
-                # elif criter == 'ce_s': # for GAP and PPDAR baselines
-                #     kld = nn.CrossEntropyLoss(reduction="mean")(
-                #             input=outsp[attr], target=targets[attr])
-                #     losses[attr] = -args.loss_lambda_s_1 * kld # TODO; should i add s_1, https://github.com/JPMC-CTO/mass/blob/yizhuo-audio-baseline/engine/gan_simclr_engine.py#L218C25-L220C44
-                # elif criter == 'ent': # for BDQ baseline
-                #     ent = Categorical(logits=outsp[attr]).entropy().mean()
-                #     losses[attr] = args.loss_lambda_s_1 * (-ent)
-                    
                 # -------- Annotated useful attributes, U --------
                 elif criter == 'pre':
                     kld = nn.CrossEntropyLoss(reduction="mean")(
@@ -231,11 +203,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: nn.ModuleDict,
                     losses[attr] = args.loss_lambda_u_2 * \
                         torch.square(violation) + \
                         args.loss_lambda_u_1 * torch.abs(violation)
-                # elif criter == 'ce_u':
-                #     kld = nn.CrossEntropyLoss(reduction="mean")(
-                #         input=outsp[attr], target=targets[attr])
-                #     losses[attr] = args.loss_lambda_u_1 * kld
-                # -----------------------------------------------
                 elif criter == 'eval':
                     losses[attr] = torch.tensor(0)
 
@@ -249,11 +216,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: nn.ModuleDict,
                         parameters=model.module.get_optimizer_params())
 
         with torch.cuda.amp.autocast(enabled=(args.deterministic == False and mode == 'train')):
-            # rerun discriminators_xp so that we do not have to worry about reusing computation graph
-            # so that the training of discriminators_xp is mostly decoupled from the training of generator and simclr discriminator
-            # though we still need a seperate optimizer to make sure that the gradients are properly accumulated
-            # notice that the xp needs to be detached from the original computation graph
-
             anonymized_x = anonymized_x.detach()
             outsp, _ = model(anonymized_x, True)
 

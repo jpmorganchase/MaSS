@@ -1,0 +1,17 @@
+./data/audiomnist/audiomnist_train_fp16.pkl
+./data/audiomnist/audiomnist_val_fp16.pkl
+./data/motionsense/motionsense_train.pkl
+./data/motionsense/motionsense_val.pkl
+./motion-sense/
+./AudioMNIST/
+
+.vscode
+*~
+__pycache__
+.ipynb_checkpoints/
+
+*.pkl
+icml_results/
+tmp/
+
+.DS_Store

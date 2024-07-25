@@ -1,5 +1,5 @@
 timm==0.5.4
-torch==1.10.0
+torch==2.2.0
 torchaudio==0.10.0
 torchvision==0.11.1
 pandas
